@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pradipta — Cricket Athlete Tracker</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@300;400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap');
+
+:root{
+  --pitch:#0a3d2e;        /* deep cricket green */
+  --pitch2:#0d5440;
+  --turf:#16a34a;
+  --leather:#9a2b1f;      /* cricket ball red */
+  --leather2:#c0392b;
+  --bronze:#c8a24a;
+  --cream:#f4efe4;
+  --ink:#101512;
+  --paper:#fbf9f3;
+  --line:#d8d0bf;
+  --muted:#6f7a72;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{
+  font-family:'Barlow',sans-serif;
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+  padding-bottom:80px;
+}
+h1,h2,h3,.disp{font-family:'Bebas Neue',sans-serif;letter-spacing:.5px;}
+.cond{font-family:'Barlow Condensed',sans-serif;}
+
+/* ---- Header ---- */
+header{
+  background:
+    radial-gradient(circle at 80% -20%, rgba(200,162,74,.25), transparent 50%),
+    linear-gradient(135deg,var(--pitch) 0%, var(--pitch2) 100%);
+  color:var(--cream);
+  padding:26px 20px 22px;
+  position:relative;
+  overflow:hidden;
+}
+header::after{
+  content:"";position:absolute;right:-40px;top:-40px;width:200px;height:200px;
+  border-radius:50%;border:3px solid var(--leather2);
+  background:radial-gradient(circle at 35% 35%, var(--leather2), var(--leather) 70%);
+  box-shadow:inset -8px -8px 20px rgba(0,0,0,.4);opacity:.92;
+}
+header::before{
+  content:"";position:absolute;right:18px;top:34px;width:120px;height:120px;
+  border-radius:50%;border:2px dashed rgba(244,239,228,.55);z-index:1;
+}
+.eyebrow{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--bronze);font-weight:700;}
+header h1{font-size:46px;line-height:.92;margin-top:4px;}
+.sub{font-size:14px;color:rgba(244,239,228,.8);margin-top:6px;max-width:70%;}
+
+/* ---- Weight band ---- */
+.wband{display:flex;gap:10px;margin-top:18px;position:relative;z-index:2;flex-wrap:wrap;}
+.stat{background:rgba(0,0,0,.22);border:1px solid rgba(200,162,74,.4);border-radius:10px;padding:8px 12px;min-width:78px;}
+.stat .k{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--bronze);}
+.stat .v{font-family:'Bebas Neue';font-size:26px;line-height:1;color:var(--cream);}
+.stat .v small{font-size:12px;font-family:'Barlow';color:rgba(244,239,228,.7);}
+
+/* ---- Tabs ---- */
+nav{display:flex;background:var(--ink);position:sticky;top:0;z-index:50;overflow-x:auto;}
+nav button{
+  flex:1 0 auto;background:none;border:none;color:#9aa49d;padding:14px 16px;
+  font-family:'Barlow Condensed';font-size:16px;font-weight:600;letter-spacing:.5px;
+  text-transform:uppercase;cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:.2s;
+}
+nav button.active{color:var(--bronze);border-bottom-color:var(--bronze);background:rgba(200,162,74,.08);}
+
+main{max-width:760px;margin:0 auto;padding:20px 16px;}
+.view{display:none;animation:fade .35s ease;}
+.view.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+/* ---- Cards / plan ---- */
+.intro{background:linear-gradient(135deg,#fff,var(--cream));border:1px solid var(--line);border-left:4px solid var(--leather);border-radius:12px;padding:16px 18px;margin-bottom:18px;font-size:14.5px;line-height:1.5;color:#33403a;}
+.intro b{color:var(--pitch);}
+.daycard{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:16px;overflow:hidden;box-shadow:0 2px 14px rgba(10,61,46,.06);}
+.dayhead{background:linear-gradient(120deg,var(--pitch),var(--pitch2));color:var(--cream);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.dayhead .dnum{font-family:'Bebas Neue';font-size:24px;letter-spacing:1px;}
+.dayhead .focus{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--bronze);}
+.dayhead .chev{transition:.3s;font-size:18px;}
+.daycard.open .chev{transform:rotate(180deg);}
+.exwrap{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+.daycard.open .exwrap{max-height:3000px;}
+.ex{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-top:1px solid #eee9dc;font-size:14px;}
+.ex:hover{background:#faf7ef;}
+.cb{appearance:none;width:20px;height:20px;border:2px solid var(--turf);border-radius:5px;flex:0 0 auto;margin-top:2px;cursor:pointer;position:relative;transition:.15s;}
+.cb:checked{background:var(--turf);}
+.cb:checked::after{content:"✓";color:#fff;position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+.exbody{flex:1;}
+.exname{font-weight:600;color:var(--ink);}
+.exname.done{text-decoration:line-through;color:var(--muted);}
+.exmeta{font-size:12px;color:var(--muted);margin-top:1px;}
+.tag{display:inline-block;font-size:10px;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:20px;font-weight:600;margin-left:6px;}
+.t-hyp{background:#e6f4ea;color:#1d7a45;}
+.t-pow{background:#fbe9e7;color:var(--leather);}
+.t-core{background:#fff4dd;color:#a87a1e;}
+.t-mob{background:#e7f0fb;color:#2563a8;}
+.t-rot{background:#f0e7fb;color:#6b3fa0;}
+.t-inj{background:#fde7f0;color:#a02f63;}
+.t-act{background:#eaf7ff;color:#1b6fa8;}
+.ytlink{font-size:11px;color:var(--turf);text-decoration:none;border-bottom:1px dotted var(--turf);}
+.progress{height:6px;background:#eee9dc;border-radius:6px;overflow:hidden;margin-top:8px;}
+.progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--turf),var(--bronze));transition:width .3s;}
+
+/* ---- Nutrition ---- */
+.pill{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.pill button{background:#fff;border:1.5px solid var(--line);border-radius:30px;padding:8px 16px;font-family:'Barlow Condensed';font-weight:600;font-size:15px;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;color:var(--muted);transition:.2s;}
+.pill button.active{background:var(--pitch);color:var(--cream);border-color:var(--pitch);}
+.macrobar{display:flex;gap:8px;margin-bottom:16px;}
+.macro{flex:1;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;}
+.macro .mv{font-family:'Bebas Neue';font-size:30px;line-height:1;color:var(--pitch);}
+.macro .ml{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-top:2px;}
+.macro.cal .mv{color:var(--leather);}
+.meal{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+.mealh{background:#f4efe4;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;}
+.mealh .mt{font-family:'Bebas Neue';font-size:19px;letter-spacing:.5px;color:var(--pitch);}
+.mealh .mc{font-size:12px;color:var(--leather);font-weight:600;}
+.mealh .time{font-size:11px;color:var(--muted);}
+.fitem{padding:8px 14px;border-top:1px solid #f0ece1;display:flex;justify-content:space-between;font-size:13.5px;}
+.fitem span:last-child{color:var(--muted);font-size:12px;}
+.note{font-size:12.5px;color:var(--muted);padding:10px 14px;background:#fbf7ee;border-top:1px dashed var(--line);line-height:1.45;}
+
+/* ---- Weight tracker ---- */
+.wtcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px;}
+.wtform{display:flex;gap:8px;margin-bottom:14px;}
+.wtform input{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font-family:'Barlow';font-size:15px;}
+.wtform input:focus{outline:none;border-color:var(--turf);}
+.wtform button{background:var(--leather);color:#fff;border:none;border-radius:10px;padding:0 18px;font-family:'Barlow Condensed';font-weight:700;font-size:15px;text-transform:uppercase;cursor:pointer;}
+#chart{width:100%;height:240px;}
+.milestones{margin-top:8px;}
+.ms{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #f0ece1;font-size:13.5px;}
+.ms:last-child{border:none;}
+.ms .mdate{color:var(--muted);font-size:12px;}
+.ms .badge{font-family:'Barlow Condensed';font-weight:700;font-size:13px;padding:2px 10px;border-radius:20px;}
+.b-hit{background:#e6f4ea;color:#1d7a45;}
+.b-pend{background:#f4efe4;color:var(--muted);}
+.loglist{margin-top:6px;max-height:180px;overflow:auto;}
+.logrow{display:flex;justify-content:space-between;padding:7px 4px;border-bottom:1px solid #f3efe4;font-size:13px;}
+.logrow button{background:none;border:none;color:var(--leather);cursor:pointer;font-size:15px;}
+.bigstat{text-align:center;margin-bottom:6px;}
+.bigstat .n{font-family:'Bebas Neue';font-size:58px;line-height:.9;color:var(--pitch);}
+.bigstat .n small{font-size:20px;color:var(--muted);}
+.bigstat .l{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);}
+.toggle{display:flex;gap:0;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px;}
+.toggle button{flex:1;background:#fff;border:none;padding:9px;font-family:'Barlow Condensed';font-weight:700;font-size:14px;text-transform:uppercase;cursor:pointer;color:var(--muted);}
+.toggle button.active{background:var(--pitch);color:var(--cream);}
+footer{text-align:center;font-size:11px;color:var(--muted);padding:24px 16px;}
+</style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">S&amp;C Athlete Program · Top-Order Bat / Medium Pacer</div>
+  <h1>THE CRICKET<br>SHRED</h1>
+  <div class="sub">44 yrs · 24-week transformation · Power, sprint &amp; endurance for cricket while cutting to 180 lbs.</div>
+  <div class="wband">
+    <div class="stat"><div class="k">Start</div><div class="v">225<small> lb</small></div></div>
+    <div class="stat"><div class="k">Current</div><div class="v" id="curStat">—</div></div>
+    <div class="stat"><div class="k">Target</div><div class="v">180<small> lb</small></div></div>
+    <div class="stat"><div class="k">To Go</div><div class="v" id="togoStat">—</div></div>
+  </div>
+</header>
+
+<nav>
+  <button class="active" data-v="plan1">Plan 1 · Coach</button>
+  <button data-v="plan2">Plan 2 · Cut</button>
+  <button data-v="nutri">Nutrition</button>
+  <button data-v="weight">Weight</button>
+</nav>
+
+<main>
+  <!-- PLAN 1 -->
+  <section class="view active" id="plan1">
+    <div class="intro"><b>Your coach's 01062026 block, exactly as written.</b> A 5-day split (Day 6 is mobility/prehab) built on hypertrophy with rotational power and injury-prevention work — tuned for a batsman/medium pacer. Tick exercises as you complete them; progress saves on this device.</div>
+    <div id="plan1cards"></div>
+  </section>
+
+  <!-- PLAN 2 -->
+  <section class="view" id="plan2">
+    <div class="intro"><b>My cut-focused build.</b> Same 5-day cricket structure, re-weighted for fat loss at 44: heavier compound strength to protect muscle in a deficit, explosive power for bat speed &amp; pace, plus 2 conditioning finishers (repeat-sprint + intervals) that drive the calorie burn you need to hit 180 in 6 months. Shoulder-safe (your injury history) and thyroid-friendly volume.</div>
+    <div id="plan2cards"></div>
+  </section>
+
+  <!-- NUTRITION -->
+  <section class="view" id="nutri">
+    <div class="intro"><b>Built from your coach's macro sheet</b> (~1,840 kcal baseline, high protein). Game days raise carbs for fuel &amp; recovery; non-game days hold the deficit that gets you to 180. Targets are tuned to your ~225→180 cut; adjust portions to hit the macro bar.</div>
+    <div class="pill" id="dayPills">
+      <button class="active" data-d="nongame">Non-Game Day</button>
+      <button data-d="t20">T20 Game Day</button>
+      <button data-d="t40">T40 Game Day</button>
+    </div>
+    <div class="macrobar" id="macrobar"></div>
+    <div id="meals"></div>
+  </section>
+
+  <!-- WEIGHT -->
+  <section class="view" id="weight">
+    <div class="wtcard">
+      <div class="bigstat"><div class="n" id="bigW">—<small> lb</small></div><div class="l">Latest Weigh-In</div></div>
+      <div class="progress" style="height:10px"><i id="bigBar"></i></div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px"><span>225</span><span id="pctLost">0% of goal</span><span>180</span></div>
+      <div class="wtform" style="margin-top:16px">
+        <input type="number" id="wIn" placeholder="Weight (lb)" step="0.1">
+        <input type="date" id="dIn">
+        <button id="logBtn">Log</button>
+      </div>
+      <div class="toggle">
+        <button class="active" data-c="line">Trend</button>
+        <button data-c="proj">vs Plan</button>
+      </div>
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="wtcard">
+      <h3 style="font-size:22px;color:var(--pitch);margin-bottom:6px">6-MONTH MILESTONES</h3>
+      <div class="milestones" id="milestones"></div>
+    </div>
+    <div class="wtcard">
+      <h3 style="font-size:22px;color:var(--pitch);margin-bottom:6px">LOG HISTORY</h3>
+      <div class="loglist" id="loglist"></div>
+    </div>
+    <div class="wtcard">
+      <h3 style="font-size:22px;color:var(--pitch);margin-bottom:6px">BACKUP &amp; RESTORE</h3>
+      <p style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:12px">Your weigh-ins &amp; ticked exercises save automatically on this device. Use Export to save a backup file (also lets you move data to another device or browser).</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="exportBtn" style="flex:1;background:var(--pitch);color:var(--cream);border:none;border-radius:10px;padding:11px;font-family:'Barlow Condensed';font-weight:700;font-size:14px;text-transform:uppercase;cursor:pointer">⬇ Export backup</button>
+        <button id="importBtn" style="flex:1;background:#fff;color:var(--pitch);border:1.5px solid var(--pitch);border-radius:10px;padding:11px;font-family:'Barlow Condensed';font-weight:700;font-size:14px;text-transform:uppercase;cursor:pointer">⬆ Import backup</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+      <div id="backupMsg" style="font-size:12.5px;color:var(--turf);margin-top:10px;min-height:16px"></div>
+    </div>
+  </section>
+</main>
+
+<footer>Data saved locally in this browser · Built from the 01062026 plan &amp; coach macro sheet</footer>
+
+<script>
+/* ---------- DATA: PLAN 1 (exact 01062026) ---------- */
+const T={Hypertrophy:'t-hyp',Power:'t-pow',Core:'t-core',Mobility:'t-mob',Rotation:'t-rot','Injury prevention':'t-inj',activation:'t-act','Single leg':'t-mob','Dynamic Stretching':'t-mob','Static Stretching':'t-mob'};
+function ex(n,v,s,r,y){return{n,v,s,r,y};}
+const plan1=[
+ {d:'Day 1',f:'Lower · Squat focus',ex:[
+  ex('Warmups','Dynamic Stretching',1,'',''),
+  ex('Front Squats','Hypertrophy',3,'8-10',''),
+  ex('Front-foot Elevated Split Squats','Hypertrophy',3,'8-10',''),
+  ex('Cossack Squat','Hypertrophy',3,'8 / side','https://www.youtube.com/watch?v=tpczTeSkHz0'),
+  ex('Glute Bridge w/ Ball Squeeze','Hypertrophy',3,'20 sec','https://www.youtube.com/watch?v=a3OOr05HZUo'),
+  ex('Assisted Nordics','Hypertrophy',3,'6-8','https://www.youtube.com/watch?v=pAi4UVpfZn0'),
+  ex('Cable Toe Raises (Tibialis)','Hypertrophy',4,'10-15','https://www.youtube.com/watch?v=CMNWn5lmbqE'),
+  ex('Seated Calf Raise','Hypertrophy',4,'10-15',''),
+  ex('Seated Russian Twists','Core',3,'30 sec',''),
+  ex('Cooldown','Static Stretching',1,'5 min','https://www.youtube.com/watch?v=W2NFGOwf0e4'),
+ ]},
+ {d:'Day 2',f:'Upper · Push / Pull',ex:[
+  ex('Warmups','Dynamic Stretching',1,'',''),
+  ex('Resistance Band Pushups','activation',3,'10 reps',''),
+  ex('Internal/External Shoulder Rotation','activation',3,'10 reps','https://www.youtube.com/watch?v=QFnXM2ueUIE'),
+  ex('Barbell Push & Jerk','Power',3,'5-8',''),
+  ex('Barbell Flat Bench Press','Hypertrophy',3,'8-10',''),
+  ex('Barbell Bent-over Row','Hypertrophy',3,'8-10',''),
+  ex('Arnold Dumbbell Press','Hypertrophy',3,'8-10',''),
+  ex('Diamond Pushups','Hypertrophy',3,'8-10',''),
+  ex('Dumbbell Hammer Curls','Hypertrophy',3,'10 / side',''),
+  ex('Cooldown','Static Stretching',1,'5 min','https://www.youtube.com/watch?v=W2NFGOwf0e4'),
+ ]},
+ {d:'Day 3',f:'Lower · Posterior chain',ex:[
+  ex('Warmups','Dynamic Stretching',1,'',''),
+  ex('Side-Lying Thoracic Rotation','Mobility',3,'10',''),
+  ex('Hip Thrusts','Hypertrophy',3,'8-10',''),
+  ex('Single-Leg Stiff-Legged Deadlift (DB)','Hypertrophy',3,'8 / side','https://www.youtube.com/watch?v=GoKjrvJi-Iw'),
+  ex('Glute Bridge w/ Ball Squeeze','Hypertrophy',3,'8-10','https://www.youtube.com/watch?v=a3OOr05HZUo'),
+  ex('Heel Walking (Hamstring)','Hypertrophy',3,'8 / side','https://www.youtube.com/watch?v=PCx5sjSfa90'),
+  ex('Nordic Curls','Hypertrophy',3,'10-15','https://www.youtube.com/watch?v=qPRZcNx_C0A'),
+  ex('Cable Toe Raises (Tibialis)','Hypertrophy',3,'10-15','https://www.youtube.com/watch?v=CMNWn5lmbqE'),
+  ex('Calf Raise','Hypertrophy',3,'10-15',''),
+  ex('Shoulder Taps','Core',3,'20 reps',''),
+  ex('Cooldown','Static Stretching',1,'5 min','https://www.youtube.com/watch?v=W2NFGOwf0e4'),
+ ]},
+ {d:'Day 4',f:'Upper · Pull & Rotation',ex:[
+  ex('Warmups','Dynamic Stretching',1,'',''),
+  ex('Negative Pullups','Hypertrophy',3,'8-10',''),
+  ex('Chest-Supported DB Rows','Hypertrophy',3,'10-15',''),
+  ex('Dumbbell Lateral Raise','Hypertrophy',3,'10-12',''),
+  ex('Landmine Deadlift to Rotational Press','Rotation',3,'8 / side','https://www.youtube.com/watch?v=m2mPGsBvfuI'),
+  ex('Pallof Press','Rotation',3,'8 / side','https://www.youtube.com/watch?v=XZkN5MljJY4'),
+  ex('Wood Choppers','Rotation',3,'8 / side','https://www.youtube.com/watch?v=WKFHw415Vdw'),
+  ex('Spider Curls','Hypertrophy',3,'10-12',''),
+  ex('Overhead Triceps Extension (1-arm)','Hypertrophy',3,'10 / side',''),
+  ex('Cooldown','Static Stretching',1,'5 min','https://www.youtube.com/watch?v=W2NFGOwf0e4'),
+ ]},
+ {d:'Day 5',f:'Mobility & Injury Prevention',ex:[
+  ex('Warmups','Dynamic Stretching',1,'',''),
+  ex('Inchworm','Mobility',3,'10 reps','https://youtu.be/OjuJOQ5pvEQ'),
+  ex('Cobra Pose','Mobility',3,'10 reps',''),
+  ex('Thoracic Windmill','Mobility',3,'10 reps','https://www.youtube.com/watch?v=-7bd8-224Q0'),
+  ex('Eccentric Heel Drop','Injury prevention',3,'6-8 / side','https://www.youtube.com/watch?v=ZcwaMVXlvJ4'),
+  ex('Prone ITWYs (Shoulder)','Injury prevention',3,'10 reps','https://www.youtube.com/watch?v=Yv6sUKOwOY8'),
+  ex('Band-Assisted Ankle Jump','Injury prevention',3,'8 reps','https://www.youtube.com/shorts/AhMh6ji_Av4'),
+  ex('Glute Bridge Hold','Single leg',3,'20 sec / side','https://www.youtube.com/watch?v=YUrExkUYm0s'),
+  ex('Cooldown','Static Stretching',1,'5 min','https://www.youtube.com/watch?v=W2NFGOwf0e4'),
+ ]},
+];
+
+/* ---------- PLAN 2 (my cut-focused build) ---------- */
+const plan2=[
+ {d:'Day 1',f:'Strength · Lower (heavy)',ex:[
+  ex('RAMP Warmup + Hip/Ankle Mobility','Dynamic Stretching',1,'8 min',''),
+  ex('Trap-Bar Deadlift','Power',4,'4-6 (heavy)',''),
+  ex('Bulgarian Split Squat','Hypertrophy',3,'8 / side',''),
+  ex('Romanian Deadlift','Hypertrophy',3,'8-10',''),
+  ex('Nordic / Assisted Nordic Curl','Injury prevention',3,'6-8','https://www.youtube.com/watch?v=qPRZcNx_C0A'),
+  ex('Standing Calf Raise','Hypertrophy',4,'12-15',''),
+  ex('Pallof Press (anti-rotation)','Core',3,'10 / side','https://www.youtube.com/watch?v=XZkN5MljJY4'),
+  ex('Finisher: Bike/Row Intervals','Power',6,'30s hard / 60s easy',''),
+ ]},
+ {d:'Day 2',f:'Power & Sprint (field)',ex:[
+  ex('Dynamic Warmup + Leg Swings','Dynamic Stretching',1,'10 min',''),
+  ex('Broad Jump','Power',4,'4 reps',''),
+  ex('Med-Ball Rotational Throw (bat speed)','Rotation',4,'5 / side',''),
+  ex('Repeat Sprints (cricket run-a-three)','Power',8,'20m, walk back',''),
+  ex('Lateral Bound','Power',3,'6 / side',''),
+  ex('Sprint-Float-Sprint','Power',4,'50m',''),
+  ex('Dead Bug','Core',3,'10 / side',''),
+  ex('Cooldown Walk + Stretch','Static Stretching',1,'8 min','https://www.youtube.com/watch?v=W2NFGOwf0e4'),
+ ]},
+ {d:'Day 3',f:'Strength · Upper (shoulder-safe)',ex:[
+  ex('Band Shoulder Activation (IR/ER)','activation',2,'15 / side','https://www.youtube.com/watch?v=QFnXM2ueUIE'),
+  ex('Neutral-Grip DB Bench Press','Hypertrophy',4,'6-8',''),
+  ex('Chest-Supported Row','Hypertrophy',4,'8-10',''),
+  ex('Half-Kneeling Landmine Press (shoulder-friendly)','Power',3,'8 / side',''),
+  ex('Cable Face Pull','Injury prevention',3,'15',''),
+  ex('Rear Delt Fly','Injury prevention',3,'15','https://www.youtube.com/watch?v=KFmpYJyN4qQ'),
+  ex('DB Hammer Curl + Triceps Rope','Hypertrophy',3,'12',''),
+  ex('Finisher: Farmer Carry','Power',4,'40m heavy',''),
+ ]},
+ {d:'Day 4',f:'Metabolic + Rotation',ex:[
+  ex('Dynamic Warmup','Dynamic Stretching',1,'8 min',''),
+  ex('Goblet Squat','Hypertrophy',3,'12',''),
+  ex('Wood Choppers (cable)','Rotation',3,'10 / side','https://www.youtube.com/watch?v=WKFHw415Vdw'),
+  ex('Landmine Rotational Press','Rotation',3,'8 / side','https://www.youtube.com/watch?v=m2mPGsBvfuI'),
+  ex('Push-Pull Superset (Pushup + Row)','Hypertrophy',3,'12+12',''),
+  ex('Kettlebell Swing','Power',4,'15',''),
+  ex('Circuit x3: KB Swing / Burpee / Mtn Climber','Power',3,'40s each',''),
+  ex('Cooldown','Static Stretching',1,'5 min','https://www.youtube.com/watch?v=W2NFGOwf0e4'),
+ ]},
+ {d:'Day 5',f:'Endurance + Prehab',ex:[
+  ex('Zone-2 Cardio (run/bike/row)','Mobility',1,'35-45 min steady',''),
+  ex('Eccentric Heel Drop','Injury prevention',3,'8 / side','https://www.youtube.com/watch?v=ZcwaMVXlvJ4'),
+  ex('Prone ITWYs (Shoulder)','Injury prevention',3,'10','https://www.youtube.com/watch?v=Yv6sUKOwOY8'),
+  ex('Neck Flexion / Extension','Injury prevention',3,'10','https://www.youtube.com/watch?v=_RyMokquXT4'),
+  ex('Thoracic Windmill','Mobility',3,'10','https://www.youtube.com/watch?v=-7bd8-224Q0'),
+  ex('Copenhagen Plank (groin)','Injury prevention',3,'20s / side',''),
+  ex('Full-Body Static Stretch','Static Stretching',1,'10 min','https://www.youtube.com/watch?v=W2NFGOwf0e4'),
+ ]},
+];
+
+/* ---------- NUTRITION ---------- */
+const nutrition={
+ nongame:{cal:1850,p:165,c:150,f:60,label:'Non-Game / Training Day',
+  note:'Deficit day that drives the cut to 180. High protein protects muscle; carbs sit around training. Hit ~7L water (your sheet) and take thyroid meds on empty stomach before Meal 1.',
+  meals:[
+   {t:'Meal 1 · Breakfast',time:'7:00',cal:374,items:[['Oats / dosa (rice flour 30g)','105 kcal'],['Whole eggs ×2','138 kcal'],['Milk 100ml + nuts 5g','86 kcal'],['Tea','—']]},
+   {t:'Meal 2 · Lunch',time:'12:30',cal:540,items:[['Chicken 150g','238 kcal'],['Rice 30g','105 kcal'],['Dal 35g','120 kcal'],['Veggies 150g','36 kcal'],['Oil 5ml','45 kcal']]},
+   {t:'Meal 3 · Snack',time:'16:30',cal:178,items:[['Whey scoop','126 kcal'],['Milk 100ml','52 kcal'],['Apple','—']]},
+   {t:'Meal 4 · Dinner',time:'20:00',cal:560,items:[['Grilled chicken 150g','238 kcal'],['Veggies 150g','36 kcal'],['Roti / rice 40g','138 kcal'],['Egg ×1','69 kcal'],['Oil 8ml','72 kcal']]},
+  ]},
+ t20:{cal:2150,p:165,c:230,f:55,label:'T20 Game Day (~3 hr)',
+  note:'Short, explosive format. Top up carbs pre-match for sprint/power; keep fat low so the stomach is light. Sip electrolytes through innings. Eat Meal 4 within 60 min of finishing to recover.',
+  meals:[
+   {t:'Pre-Game Breakfast',time:'3 hr before',cal:520,items:[['Oats 50g + banana','280 kcal'],['Whole eggs ×2','138 kcal'],['Honey 1 tbsp','—'],['Milk 150ml','78 kcal']]},
+   {t:'Top-Up (1 hr before)',time:'pre',cal:230,items:[['Banana','96 kcal'],['Whey scoop','126 kcal']]},
+   {t:'In-Innings Fuel',time:'mid-game',cal:200,items:[['Electrolyte drink','~80 kcal'],['Dates / fruit','~120 kcal']]},
+   {t:'Recovery Meal',time:'post-game',cal:600,items:[['Chicken 180g','286 kcal'],['Rice 50g','174 kcal'],['Veggies + dal','140 kcal']]},
+   {t:'Dinner',time:'night',cal:600,items:[['Grilled chicken / fish 150g','~200 kcal'],['Roti 40g + veggies','174 kcal'],['Curd 100g','63 kcal']]},
+  ]},
+ t40:{cal:2450,p:170,c:300,f:58,label:'T40 Game Day (~6 hr)',
+  note:'Long format = more total fuel and steady carbs across the day to hold sprint speed late and protect bowling pace. Keep eating little-and-often between innings. This is your highest-carb day — fine, since output is high; return to deficit next day.',
+  meals:[
+   {t:'Pre-Game Breakfast',time:'3 hr before',cal:600,items:[['Oats 60g + banana + honey','360 kcal'],['Eggs ×3','207 kcal'],['Milk 150ml','78 kcal']]},
+   {t:'Top-Up',time:'1 hr before',cal:250,items:[['Banana','96 kcal'],['Whey scoop','126 kcal']]},
+   {t:'Between Innings / Lunch',time:'mid-day',cal:650,items:[['Chicken 180g','286 kcal'],['Rice 60g','209 kcal'],['Dal + veggies','155 kcal']]},
+   {t:'In-Play Fuel',time:'ongoing',cal:300,items:[['Electrolytes','~80 kcal'],['Dates / fruit / sandwich','~220 kcal']]},
+   {t:'Recovery + Dinner',time:'post-game',cal:650,items:[['Fish / chicken 180g','~250 kcal'],['Rice / roti 50g','174 kcal'],['Veggies + curd','~150 kcal']]},
+  ]},
+};
+
+/* ---------- STATE (persistent via localStorage) ---------- */
+const NS='cricketTracker_';
+let memFallback={};
+function save(k,v){try{localStorage.setItem(NS+k,JSON.stringify(v));}catch(e){memFallback[k]=v;}}
+function load(k,d){try{const r=localStorage.getItem(NS+k);return r!==null?JSON.parse(r):(memFallback[k]!==undefined?memFallback[k]:d);}catch(e){return memFallback[k]!==undefined?memFallback[k]:d;}}
+let done=load('done',{});
+let weights=load('weights',[]);
+const START=225,TARGET=180,WEEKS=26;
+
+/* ---------- RENDER PLANS ---------- */
+function renderPlan(plan,container,key){
+  const el=document.getElementById(container);el.innerHTML='';
+  plan.forEach((day,di)=>{
+    const total=day.ex.length;
+    const card=document.createElement('div');card.className='daycard'+(di===0?' open':'');
+    let exHTML='';
+    day.ex.forEach((e,ei)=>{
+      const id=key+'-'+di+'-'+ei;
+      const checked=done[id]?'checked':'';
+      const cls=T[e.v]||'t-hyp';
+      const link=e.y?`<a class="ytlink" href="${e.y}" target="_blank" rel="noopener">▶ video</a>`:'';
+      exHTML+=`<label class="ex">
+        <input type="checkbox" class="cb" data-id="${id}" ${checked}>
+        <div class="exbody">
+          <span class="exname ${done[id]?'done':''}">${e.n}<span class="tag ${cls}">${e.v}</span></span>
+          <div class="exmeta">${e.s} sets${e.r?' · '+e.r:''} ${link}</div>
+        </div></label>`;
+    });
+    card.innerHTML=`<div class="dayhead"><div><div class="dnum">${day.d}</div><div class="focus">${day.f}</div></div>
+      <div style="text-align:right"><span class="chev">▾</span></div></div>
+      <div class="exwrap">${exHTML}<div style="padding:0 16px 14px"><div class="progress"><i data-bar="${key}-${di}" style="width:0%"></i></div></div></div>`;
+    el.appendChild(card);
+    card.querySelector('.dayhead').onclick=()=>card.classList.toggle('open');
+  });
+  el.querySelectorAll('.cb').forEach(cb=>{
+    cb.onchange=()=>{done[cb.dataset.id]=cb.checked;save('done',done);
+      cb.closest('.ex').querySelector('.exname').classList.toggle('done',cb.checked);updateBars(plan,key);};
+  });
+  updateBars(plan,key);
+}
+function updateBars(plan,key){
+  plan.forEach((day,di)=>{
+    const total=day.ex.length;let n=0;
+    day.ex.forEach((e,ei)=>{if(done[key+'-'+di+'-'+ei])n++;});
+    const bar=document.querySelector(`[data-bar="${key}-${di}"]`);
+    if(bar)bar.style.width=(n/total*100)+'%';
+  });
+}
+
+/* ---------- NUTRITION RENDER ---------- */
+let curDay='nongame';
+function renderNutri(){
+  const d=nutrition[curDay];
+  document.getElementById('macrobar').innerHTML=`
+    <div class="macro cal"><div class="mv">${d.cal}</div><div class="ml">kcal</div></div>
+    <div class="macro"><div class="mv">${d.p}</div><div class="ml">Protein g</div></div>
+    <div class="macro"><div class="mv">${d.c}</div><div class="ml">Carbs g</div></div>
+    <div class="macro"><div class="mv">${d.f}</div><div class="ml">Fat g</div></div>`;
+  let html='';
+  d.meals.forEach(m=>{
+    let items=m.items.map(i=>`<div class="fitem"><span>${i[0]}</span><span>${i[1]}</span></div>`).join('');
+    html+=`<div class="meal"><div class="mealh"><span class="mt">${m.t}</span>
+      <span><span class="time">${m.time}</span> · <span class="mc">${m.cal} kcal</span></span></div>${items}</div>`;
+  });
+  html+=`<div class="meal"><div class="note">💡 ${d.note}</div></div>`;
+  document.getElementById('meals').innerHTML=html;
+}
+document.getElementById('dayPills').onclick=e=>{
+  if(e.target.dataset.d){curDay=e.target.dataset.d;
+    document.querySelectorAll('#dayPills button').forEach(b=>b.classList.toggle('active',b===e.target));
+    renderNutri();}
+};
+
+/* ---------- WEIGHT ---------- */
+function planLine(){ // ideal weekly weight start->target over 26 wks
+  const arr=[];for(let w=0;w<=WEEKS;w++)arr.push(+(START-(START-TARGET)*w/WEEKS).toFixed(1));return arr;
+}
+function renderWeight(){
+  weights.sort((a,b)=>new Date(a.d)-new Date(b.d));
+  const latest=weights.length?weights[weights.length-1].w:null;
+  // header stats
+  document.getElementById('curStat').innerHTML=latest?latest+'<small> lb</small>':'—';
+  document.getElementById('togoStat').innerHTML=latest?Math.max(0,(latest-TARGET)).toFixed(1)+'<small> lb</small>':'—';
+  document.getElementById('bigW').innerHTML=latest?latest+'<small> lb</small>':'—<small> lb</small>';
+  const lost=latest?START-latest:0, pct=Math.max(0,Math.min(100,lost/(START-TARGET)*100));
+  document.getElementById('bigBar').style.width=pct+'%';
+  document.getElementById('pctLost').textContent=Math.round(pct)+'% of goal';
+  // log list
+  document.getElementById('loglist').innerHTML=weights.length?weights.slice().reverse().map((x,i)=>
+    `<div class="logrow"><span>${fmt(x.d)}</span><span><b>${x.w} lb</b> <button data-del="${x.d}">✕</button></span></div>`).join(''):
+    '<div style="color:var(--muted);font-size:13px;padding:8px 0">No entries yet — log your first weigh-in above.</div>';
+  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    weights=weights.filter(x=>x.d!==b.dataset.del);save('weights',weights);renderWeight();});
+  // milestones
+  renderMilestones(latest);
+  drawChart();
+}
+function renderMilestones(latest){
+  const start=new Date(weights.length?weights[0].d:new Date());
+  const targets=[ [225,0],[214,4],[203,9],[192,14],[185,20],[180,26] ];
+  const labels=['Start','Month 1','Month 2','Month 3','Month 4-5','Goal'];
+  let html='';
+  targets.forEach((t,i)=>{
+    const dt=new Date(start);dt.setDate(dt.getDate()+t[1]*7);
+    const hit=latest!==null&&latest<=t[0];
+    html+=`<div class="ms"><div><b>${labels[i]}</b> · ≤ ${t[0]} lb<div class="mdate">~ ${fmt(dt.toISOString().slice(0,10))}</div></div>
+      <span class="badge ${hit?'b-hit':'b-pend'}">${hit?'✓ hit':'pending'}</span></div>`;
+  });
+  document.getElementById('milestones').innerHTML=html;
+}
+let chartMode='line';
+document.querySelector('.toggle').onclick=e=>{
+  if(e.target.dataset.c){chartMode=e.target.dataset.c;
+    document.querySelectorAll('.toggle button').forEach(b=>b.classList.toggle('active',b===e.target));drawChart();}
+};
+function drawChart(){
+  const c=document.getElementById('chart'),dpr=window.devicePixelRatio||1;
+  const W=c.clientWidth,H=240;c.width=W*dpr;c.height=H*dpr;
+  const x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);
+  const pad=36,pb=24;const minW=175,maxW=230;
+  const y=v=>H-pb-(v-minW)/(maxW-minW)*(H-pad-pb);
+  // grid
+  x.strokeStyle='#eee9dc';x.fillStyle='#9aa49d';x.font='10px Barlow';x.lineWidth=1;
+  for(let v=180;v<=225;v+=15){x.beginPath();x.moveTo(pad,y(v));x.lineTo(W-8,y(v));x.stroke();x.fillText(v,4,y(v)+3);}
+  // target band
+  x.fillStyle='rgba(22,163,74,.08)';x.fillRect(pad,y(180),W-pad-8,H-pb-y(180));
+  x.strokeStyle='#16a34a';x.setLineDash([4,4]);x.beginPath();x.moveTo(pad,y(180));x.lineTo(W-8,y(180));x.stroke();x.setLineDash([]);
+  const n=Math.max(weights.length,2);
+  const px=i=>pad+i/(Math.max(n-1,1))*(W-pad-12);
+  // plan line
+  if(chartMode==='proj'){
+    const pl=planLine();x.strokeStyle='#c8a24a';x.lineWidth=2;x.setLineDash([6,4]);x.beginPath();
+    pl.forEach((v,i)=>{const xx=pad+i/WEEKS*(W-pad-12);i?x.lineTo(xx,y(v)):x.moveTo(xx,y(v));});
+    x.stroke();x.setLineDash([]);
+    x.fillStyle='#c8a24a';x.fillText('plan',W-40,y(pl[WEEKS])-6);
+  }
+  // actual
+  if(weights.length){
+    x.strokeStyle='#9a2b1f';x.lineWidth=2.5;x.beginPath();
+    weights.forEach((p,i)=>{const xx=chartMode==='proj'?pad+weekIdx(p.d)/WEEKS*(W-pad-12):px(i);i?x.lineTo(xx,y(p.w)):x.moveTo(xx,y(p.w));});
+    x.stroke();
+    weights.forEach((p,i)=>{const xx=chartMode==='proj'?pad+weekIdx(p.d)/WEEKS*(W-pad-12):px(i);
+      x.fillStyle='#9a2b1f';x.beginPath();x.arc(xx,y(p.w),4,0,7);x.fill();
+      x.fillStyle='#fff';x.beginPath();x.arc(xx,y(p.w),1.6,0,7);x.fill();});
+  }else{
+    x.fillStyle='#9aa49d';x.font='13px Barlow';x.fillText('Log weigh-ins to see your trend',pad+10,H/2);
+  }
+}
+function weekIdx(d){const s=weights.length?new Date(weights[0].d):new Date();return Math.min(WEEKS,(new Date(d)-s)/(7*864e5));}
+function fmt(d){const o={month:'short',day:'numeric',year:'2-digit'};return new Date(d+'T00:00').toLocaleDateString('en-US',o);}
+
+document.getElementById('logBtn').onclick=()=>{
+  const w=parseFloat(document.getElementById('wIn').value);
+  let d=document.getElementById('dIn').value;
+  if(!w)return;if(!d)d=new Date().toISOString().slice(0,10);
+  weights=weights.filter(x=>x.d!==d);weights.push({d,w});save('weights',weights);
+  document.getElementById('wIn').value='';renderWeight();
+};
+
+/* ---------- TABS ---------- */
+document.querySelector('nav').onclick=e=>{
+  if(!e.target.dataset.v)return;
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b===e.target));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===e.target.dataset.v));
+  if(e.target.dataset.v==='weight')drawChart();
+};
+
+/* ---------- BACKUP / RESTORE ---------- */
+document.getElementById('exportBtn').onclick=()=>{
+  const data={version:1,exported:new Date().toISOString(),done,weights};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='cricket-tracker-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+  document.getElementById('backupMsg').textContent='✓ Backup saved to your downloads.';
+};
+document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
+document.getElementById('importFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{try{
+    const d=JSON.parse(r.result);
+    if(d.done){done=d.done;save('done',done);}
+    if(d.weights){weights=d.weights;save('weights',weights);}
+    renderPlan(plan1,'plan1cards','p1');renderPlan(plan2,'plan2cards','p2');renderWeight();
+    document.getElementById('backupMsg').textContent='✓ Backup restored.';
+  }catch(err){document.getElementById('backupMsg').style.color='#9a2b1f';
+    document.getElementById('backupMsg').textContent='✕ Could not read that file.';}};
+  r.readAsText(f);e.target.value='';
+};
+
+/* ---------- INIT ---------- */
+document.getElementById('dIn').value=new Date().toISOString().slice(0,10);
+renderPlan(plan1,'plan1cards','p1');
+renderPlan(plan2,'plan2cards','p2');
+renderNutri();
+renderWeight();
+window.addEventListener('resize',()=>{if(document.getElementById('weight').classList.contains('active'))drawChart();});
+</script>
+</body>
+</html>
