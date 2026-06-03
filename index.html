@@ -150,6 +150,32 @@ main{max-width:760px;margin:0 auto;padding:20px 16px;}
 .toggle{display:flex;gap:0;border:1.5px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px;}
 .toggle button{flex:1;background:#fff;border:none;padding:9px;font-family:'Barlow Condensed';font-weight:700;font-size:14px;text-transform:uppercase;cursor:pointer;color:var(--muted);}
 .toggle button.active{background:var(--pitch);color:var(--cream);}
+/* ---- Vitals ---- */
+.vtask{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.15s;}
+.vtask.done{border-color:var(--turf);background:#f1f9f3;}
+.vtask .vl{display:flex;align-items:center;gap:12px;}
+.vtask .vi{width:38px;height:38px;border-radius:11px;background:#f4efe4;display:grid;place-items:center;font-size:18px;}
+.vtask.done .vi{background:var(--turf);}
+.vtask .vname{font-weight:600;font-size:15px;color:var(--ink);}
+.vtask.done .vname{color:var(--pitch);}
+.vchk{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px;}
+.vtask.done .vchk{background:var(--turf);border-color:var(--turf);}
+.weight-row{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;}
+.weight-row .vl{display:flex;align-items:center;gap:12px;}
+.weight-row .vi{width:38px;height:38px;border-radius:11px;background:#f4efe4;display:grid;place-items:center;font-size:18px;}
+.winput{width:90px;background:var(--paper);border:1.5px solid var(--line);border-radius:10px;color:var(--ink);font-size:16px;font-family:'Barlow';padding:8px 10px;text-align:right;}
+.cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.cal-m{font-family:'Bebas Neue';font-size:22px;letter-spacing:1px;color:var(--pitch);}
+.navbtn{background:var(--paper);border:1.5px solid var(--line);color:var(--pitch);border-radius:10px;width:38px;height:38px;font-size:20px;cursor:pointer;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.dow{text-align:center;font-size:10px;color:var(--muted);font-weight:700;padding-bottom:3px;}
+.cell{position:relative;aspect-ratio:1;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;display:grid;place-items:center;border:1px solid transparent;background:transparent;color:var(--ink);}
+.cell.today{outline:2px solid var(--bronze);}
+.cell.sel{border-color:var(--pitch);}
+.cell .cdot{position:absolute;bottom:4px;width:4px;height:4px;border-radius:50%;background:var(--leather);}
+.cal-legend{display:flex;align-items:center;gap:5px;justify-content:flex-end;margin-top:14px;font-size:10px;color:var(--muted);}
+.cal-legend .lbox{width:13px;height:13px;border-radius:4px;}
+#vBars{width:100%;height:160px;}
 footer{text-align:center;font-size:11px;color:var(--muted);padding:24px 16px;}
 </style>
 </head>
@@ -171,6 +197,7 @@ footer{text-align:center;font-size:11px;color:var(--muted);padding:24px 16px;}
   <button data-v="plan2">Plan 2 · Cut</button>
   <button data-v="nutri">Nutrition</button>
   <button data-v="weight">Weight</button>
+  <button data-v="vitals">Vitals</button>
 </nav>
 
 <main>
@@ -232,6 +259,40 @@ footer{text-align:center;font-size:11px;color:var(--muted);padding:24px 16px;}
       </div>
       <input type="file" id="importFile" accept="application/json" style="display:none">
       <div id="backupMsg" style="font-size:12.5px;color:var(--turf);margin-top:10px;min-height:16px"></div>
+    </div>
+  </section>
+
+  <!-- VITALS -->
+  <section class="view" id="vitals">
+    <div class="intro"><b>Daily discipline.</b> Tick off your habits each day, log a weigh-in, and build a streak. The calendar shows how consistent you've been; trends show the last 14 days. All of it backs up with the Export button on the Weight tab.</div>
+    <div class="wtcard" style="display:flex;justify-content:space-between;align-items:center;padding:14px 18px">
+      <div><div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)" id="vDayLabel">Today</div>
+        <div style="font-family:'Bebas Neue';font-size:22px;color:var(--pitch)" id="vPct">0% complete</div></div>
+      <div style="text-align:center;background:var(--pitch);color:var(--bronze);border-radius:14px;padding:8px 16px">
+        <div style="font-family:'Bebas Neue';font-size:26px;line-height:1" id="vStreak">0</div>
+        <div style="font-size:9px;letter-spacing:1px;color:var(--cream)">DAY STREAK 🔥</div></div>
+    </div>
+    <div class="progress" style="height:10px;margin:-6px 2px 14px"><i id="vFill"></i></div>
+    <div id="vTasks"></div>
+    <div class="weight-row" id="vWeightRow"></div>
+
+    <div class="wtcard" style="margin-top:16px">
+      <div class="cal-nav"><button class="navbtn" id="vPrev">‹</button>
+        <span class="cal-m" id="vMonth">—</span>
+        <button class="navbtn" id="vNext">›</button></div>
+      <div class="cal-grid" id="vGrid"></div>
+      <div class="cal-legend"><span>Less</span>
+        <span class="lbox" style="border:1px solid var(--line)"></span>
+        <span class="lbox" style="background:rgba(22,163,74,.25)"></span>
+        <span class="lbox" style="background:rgba(22,163,74,.55)"></span>
+        <span class="lbox" style="background:var(--turf)"></span>
+        <span>All done</span></div>
+    </div>
+
+    <div class="wtcard">
+      <h3 style="font-size:20px;color:var(--pitch);margin-bottom:4px">HABITS · LAST 14 DAYS</h3>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px" id="vTrendAvg">—</div>
+      <canvas id="vBars"></canvas>
     </div>
   </section>
 </main>
@@ -553,11 +614,100 @@ document.querySelector('nav').onclick=e=>{
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b===e.target));
   document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===e.target.dataset.v));
   if(e.target.dataset.v==='weight')drawChart();
+  if(e.target.dataset.v==='vitals')renderVitals();
 };
+
+/* ---------- VITALS ---------- */
+const VTASKS=[
+  {key:'steps',label:'10k Steps',icon:'👟'},
+  {key:'workout',label:'Workout Done',icon:'💪'},
+  {key:'nosugar',label:'No Sugar',icon:'🚫'},
+  {key:'mobility',label:'Mobility / Stretch',icon:'🧘'},
+  {key:'water',label:'7L Water',icon:'💧'},
+];
+const VMONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+let vitals=load('vitals',{});
+let vSel=ymdStr(new Date()), vView=new Date();
+function ymdStr(d){const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
+function vToday(){return ymdStr(new Date());}
+function vDay(k){return vitals[k]||{};}
+function vScore(k){const d=vDay(k);let n=0;VTASKS.forEach(t=>{if(d[t.key])n++;});return n/VTASKS.length;}
+function vStreakCount(){let s=0,c=new Date();while(vScore(ymdStr(c))===1){s++;c.setDate(c.getDate()-1);}return s;}
+function vFmtShort(k){const p=k.split('-').map(Number);return new Date(p[0],p[1]-1,p[2]).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+function renderVitalsToday(){
+  const day=vDay(vSel),pct=Math.round(vScore(vSel)*100);
+  document.getElementById('vDayLabel').textContent=(vSel===vToday()?'Today':'Viewing')+' · '+vFmtShort(vSel);
+  document.getElementById('vPct').textContent=pct+'% complete';
+  document.getElementById('vFill').style.width=pct+'%';
+  document.getElementById('vStreak').textContent=vStreakCount();
+  let html='';
+  VTASKS.forEach(t=>{const done=!!day[t.key];
+    html+=`<div class="vtask ${done?'done':''}" data-vt="${t.key}">
+      <div class="vl"><span class="vi">${t.icon}</span><span class="vname">${t.label}</span></div>
+      <span class="vchk">${done?'✓':''}</span></div>`;});
+  document.getElementById('vTasks').innerHTML=html;
+  document.getElementById('vTasks').querySelectorAll('[data-vt]').forEach(el=>{
+    el.onclick=()=>{const k=el.dataset.vt;const d=vitals[vSel]||(vitals[vSel]={});
+      d[k]=!d[k];save('vitals',vitals);renderVitalsToday();renderVitalsCal();renderVitalsTrend();
+      const lw=getWeightFor(vSel);if(lw!=null){}};
+  });
+  // weight row (shares the same weigh-in data as Weight tab)
+  const wv=getWeightFor(vSel);
+  document.getElementById('vWeightRow').innerHTML=`
+    <div class="vl"><span class="vi">⚖️</span><span class="vname">Weight</span></div>
+    <div><input class="winput" type="number" step="0.1" id="vWInput" placeholder="—" value="${wv!=null?wv:''}"> <span style="color:var(--muted);font-size:13px">lb</span></div>`;
+  document.getElementById('vWInput').onchange=e=>{
+    const w=parseFloat(e.target.value);
+    weights=weights.filter(x=>x.d!==vSel);
+    if(!isNaN(w))weights.push({d:vSel,w});
+    save('weights',weights);renderWeight();renderVitalsTrend();
+  };
+}
+function getWeightFor(k){const f=weights.find(x=>x.d===k);return f?f.w:null;}
+
+function renderVitalsCal(){
+  const y=vView.getFullYear(),m=vView.getMonth();
+  document.getElementById('vMonth').textContent=VMONTHS[m]+' '+y;
+  const first=new Date(y,m,1).getDay(),days=new Date(y,m+1,0).getDate();
+  let html=['S','M','T','W','T','F','S'].map(d=>`<div class="dow">${d}</div>`).join('');
+  for(let i=0;i<first;i++)html+='<div></div>';
+  for(let d=1;d<=days;d++){
+    const k=y+'-'+String(m+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const sc=vScore(k);let bg='transparent',bd='1px solid var(--line)';
+    if(sc>0&&sc<.5)bg='rgba(22,163,74,.25)';else if(sc>=.5&&sc<1)bg='rgba(22,163,74,.55)';else if(sc===1){bg='var(--turf)';}
+    const cls=(k===vToday()?' today':'')+(k===vSel?' sel':'');
+    const dot=getWeightFor(k)!=null?'<span class="cdot"></span>':'';
+    html+=`<button class="cell${cls}" data-vc="${k}" style="background:${bg};border:${sc>0?'1px solid transparent':bd};color:${sc===1?'#fff':'var(--ink)'}">${d}${dot}</button>`;
+  }
+  document.getElementById('vGrid').innerHTML=html;
+  document.getElementById('vGrid').querySelectorAll('[data-vc]').forEach(b=>{
+    b.onclick=()=>{vSel=b.dataset.vc;renderVitalsToday();renderVitalsCal();};
+  });
+}
+function renderVitalsTrend(){
+  const out=[];let total=0;
+  for(let i=13;i>=0;i--){const c=new Date();c.setDate(c.getDate()-i);const k=ymdStr(c);
+    let n=0;VTASKS.forEach(t=>{if(vDay(k)[t.key])n++;});total+=n;
+    out.push({label:vFmtShort(k),n});}
+  document.getElementById('vTrendAvg').textContent='Avg '+Math.round(total/14/VTASKS.length*100)+'% of daily habits';
+  const c=document.getElementById('vBars'),dpr=window.devicePixelRatio||1,W=c.clientWidth||340,H=160;
+  c.width=W*dpr;c.height=H*dpr;const x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);
+  const pad=20,pb=22,bw=(W-pad-6)/14,maxY=VTASKS.length;
+  x.strokeStyle='#eee9dc';x.beginPath();x.moveTo(pad,H-pb);x.lineTo(W-4,H-pb);x.stroke();
+  out.forEach((d,i)=>{const bh=(d.n/maxY)*(H-pb-8);const bx=pad+i*bw;
+    x.fillStyle=d.n===maxY?'#16a34a':'#c8a24a';
+    x.fillRect(bx+2,H-pb-bh,bw-4,bh);
+    if(i%2===0){x.fillStyle='#9aa49d';x.font='9px Barlow';x.fillText(d.label.split(' ')[1],bx,H-7);}
+  });
+}
+document.getElementById('vPrev').onclick=()=>{vView.setMonth(vView.getMonth()-1);renderVitalsCal();};
+document.getElementById('vNext').onclick=()=>{vView.setMonth(vView.getMonth()+1);renderVitalsCal();};
+function renderVitals(){renderVitalsToday();renderVitalsCal();renderVitalsTrend();}
 
 /* ---------- BACKUP / RESTORE ---------- */
 document.getElementById('exportBtn').onclick=()=>{
-  const data={version:1,exported:new Date().toISOString(),done,weights};
+  const data={version:2,exported:new Date().toISOString(),done,weights,vitals};
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='cricket-tracker-backup-'+new Date().toISOString().slice(0,10)+'.json';
@@ -572,7 +722,8 @@ document.getElementById('importFile').onchange=e=>{
     const d=JSON.parse(r.result);
     if(d.done){done=d.done;save('done',done);}
     if(d.weights){weights=d.weights;save('weights',weights);}
-    renderPlan(plan1,'plan1cards','p1');renderPlan(plan2,'plan2cards','p2');renderWeight();
+    if(d.vitals){vitals=d.vitals;save('vitals',vitals);}
+    renderPlan(plan1,'plan1cards','p1');renderPlan(plan2,'plan2cards','p2');renderWeight();renderVitals();
     document.getElementById('backupMsg').textContent='✓ Backup restored.';
   }catch(err){document.getElementById('backupMsg').style.color='#9a2b1f';
     document.getElementById('backupMsg').textContent='✕ Could not read that file.';}};
@@ -585,7 +736,11 @@ renderPlan(plan1,'plan1cards','p1');
 renderPlan(plan2,'plan2cards','p2');
 renderNutri();
 renderWeight();
-window.addEventListener('resize',()=>{if(document.getElementById('weight').classList.contains('active'))drawChart();});
+renderVitals();
+window.addEventListener('resize',()=>{
+  if(document.getElementById('weight').classList.contains('active'))drawChart();
+  if(document.getElementById('vitals').classList.contains('active'))renderVitalsTrend();
+});
 </script>
 </body>
 </html>
