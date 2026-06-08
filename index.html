@@ -239,6 +239,19 @@ footer{text-align:center;font-size:11px;color:var(--muted);padding:24px 16px;}
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px" id="vTrendAvg">—</div><canvas id="vBars"></canvas></div>
   </section>
 
+  <section class="view" id="history">
+    <div class="intro"><b>Workout history.</b> Every completed day is logged with its plan, day, and date. Mark a day complete from the Plans tab (or it auto-completes when you tick everything).</div>
+    <div class="wtcard" style="display:flex;gap:10px;text-align:center">
+      <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:34px;color:var(--pitch);line-height:1" id="hTotal">0</div><div class="tiny">total sessions</div></div>
+      <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:34px;color:var(--leather);line-height:1" id="hWeek">0</div><div class="tiny">this week</div></div>
+      <div style="flex:1"><div style="font-family:'Bebas Neue';font-size:34px;color:var(--bronze);line-height:1" id="hStreakW">0</div><div class="tiny">wk streak</div></div>
+    </div>
+    <div class="wtcard"><h3 style="font-size:20px;color:var(--pitch);margin-bottom:4px">SESSIONS · LAST 12 WEEKS</h3>
+      <div class="tiny" id="hAvg" style="margin-bottom:10px">—</div><canvas id="hBars" style="width:100%;height:160px"></canvas></div>
+    <div class="wtcard"><h3 style="font-size:20px;color:var(--pitch);margin-bottom:8px">BY DAY OF WEEK</h3><div id="hDow"></div></div>
+    <div class="wtcard"><h3 style="font-size:20px;color:var(--pitch);margin-bottom:6px">LOG</h3><div class="loglist" id="hLog"></div></div>
+  </section>
+
   <section class="view" id="settings">
     <div class="wtcard">
       <div class="sectitle">PROFILE &amp; GOALS</div>
@@ -363,7 +376,7 @@ let APP=loadApp();
 function blankProfile(){
  return {settings:{name:'',sub:'Power, sprint & endurance training with a structured weight-management plan.',unit:'lb',start:225,target:180,weeks:26},
    nutCfg:{base:1850,protPerLb:1,foodMode:'guide',t20up:300,t40up:600,fatFloor:0.3},
-   plans:seedPlans(),activePlan:0,done:{},weights:[],vitalDefs:seedVitals(),vitals:{}};
+   plans:seedPlans(),activePlan:0,done:{},weights:[],vitalDefs:seedVitals(),vitals:{},workoutLog:[]};
 }
 function loadApp(){
  const raw=lsGet(NS+'app');
@@ -394,7 +407,7 @@ function fmtShort(k){const p=k.split('-').map(Number);return new Date(p[0],p[1]-
 function U(){return P().settings.unit;}
 
 /* ============ NAV ============ */
-const TABS=[['plans','Plans'],['nutri','Nutrition'],['weight','Weight'],['vitals','Vitals'],['settings','Settings']];
+const TABS=[['plans','Plans'],['nutri','Nutrition'],['weight','Weight'],['vitals','Vitals'],['history','History'],['settings','Settings']];
 function buildNav(){
  $('nav').innerHTML=TABS.map((t,i)=>`<button data-v="${t[0]}" class="${i===0?'active':''}">${t[1]}</button>`).join('');
  $('nav').onclick=e=>{const v=e.target.dataset.v;if(!v)return;
@@ -402,6 +415,7 @@ function buildNav(){
    document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active',s.id===v));
    if(v==='weight')drawChart();
    if(v==='vitals')renderVitals();
+   if(v==='history')renderHistory();
    if(v==='settings')fillSettings();
  };
 }
@@ -448,16 +462,51 @@ function renderPlanCards(){
        <div class="exbody"><span class="exname ${done?'done':''}">${esc(e.n)}${e.v?`<span class="tag ${cls}">${esc(e.v)}</span>`:''}</span>
        <div class="exmeta">${e.s||''} sets${e.r?' · '+esc(e.r):''} ${link}</div></div></label>`;
    });
+   const lastDone=lastCompletion(curPlan,di);
+   const doneToday=lastDone===todayKey();
+   h+=`<div style="padding:6px 16px 14px"><div class="progress"><i data-bar="${di}" style="width:0%"></i></div>
+     <div style="display:flex;align-items:center;gap:10px;margin-top:10px">
+       <button class="btn sm ${doneToday?'alt':''}" data-complete="${di}">${doneToday?'✓ Completed today':'Mark day complete'}</button>
+       <span class="tiny" data-lastdone="${di}">${lastDone?'Last done '+fmt(lastDone):'Not logged yet'}</span>
+     </div></div>`;
    card.innerHTML=`<div class="dayhead"><div><div class="dnum">${esc(day.d)}</div><div class="focus">${esc(day.f||'')}</div></div><span class="chev">▾</span></div>
-     <div class="exwrap">${h}<div style="padding:0 16px 14px"><div class="progress"><i data-bar="${di}" style="width:0%"></i></div></div></div>`;
+     <div class="exwrap">${h}</div>`;
    el.appendChild(card);
    card.querySelector('.dayhead').onclick=()=>card.classList.toggle('open');
  });
  el.querySelectorAll('.cb').forEach(cb=>cb.onchange=()=>{
    P().done[cb.dataset.id]=cb.checked;commit();
-   cb.closest('.ex').querySelector('.exname').classList.toggle('done',cb.checked);updateBars();
+   cb.closest('.ex').querySelector('.exname').classList.toggle('done',cb.checked);
+   updateBars();
+   // auto-complete prompt when all exercises in the day are ticked
+   if(cb.checked){const di=+cb.dataset.id.split('-')[1];if(allChecked(curPlan,di)&&lastCompletion(curPlan,di)!==todayKey()){
+     completeDay(di,true);
+   }}
  });
+ el.querySelectorAll('[data-complete]').forEach(b=>b.onclick=()=>completeDay(+b.dataset.complete,false));
  updateBars();
+}
+function allChecked(pi,di){const day=P().plans[pi].days[di];if(!day.ex.length)return false;return day.ex.every((e,ei)=>P().done[pi+'-'+di+'-'+ei]);}
+function lastCompletion(pi,di){const logs=(P().workoutLog||[]).filter(l=>l.plan===pi&&l.day===di);return logs.length?logs.map(l=>l.date).sort().pop():null;}
+function completeDay(di,auto){
+ const log=P().workoutLog||(P().workoutLog=[]);
+ const date=todayKey();
+ if(log.some(l=>l.plan===curPlan&&l.day===di&&l.date===date)){
+   // toggle off if tapped again manually
+   if(!auto){P().workoutLog=log.filter(l=>!(l.plan===curPlan&&l.day===di&&l.date===date));commit();renderPlanCards();}
+   return;
+ }
+ const plan=P().plans[curPlan];const day=plan.days[di];
+ log.push({date,plan:curPlan,planName:plan.name,day:di,dayName:day.d,focus:day.f||''});
+ commit();
+ autoTickWorkoutHabit(date);
+ renderPlanCards();
+}
+// auto-tick the vitals "workout" habit IF one exists (don't create)
+function autoTickWorkoutHabit(date){
+ const def=P().vitalDefs.find(d=>d.type==='check'&&(d.id==='workout'||/workout/i.test(d.label)));
+ if(!def)return;
+ const d=P().vitals[date]||(P().vitals[date]={});d[def.id]=true;commit();
 }
 function updateBars(){
  const plan=P().plans[curPlan];if(!plan)return;
@@ -465,6 +514,48 @@ function updateBars(){
    const bar=document.querySelector(`#planCards [data-bar="${di}"]`);if(bar)bar.style.width=(day.ex.length?n/day.ex.length*100:0)+'%';});
 }
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+/* ============ WORKOUT HISTORY ============ */
+function weekStart(d){const x=new Date(d);const day=x.getDay();x.setDate(x.getDate()-day);x.setHours(0,0,0,0);return x;}
+function renderHistory(){
+ const log=(P().workoutLog||[]).slice().sort((a,b)=>a.date<b.date?1:-1);
+ $('hTotal').textContent=log.length;
+ const ws=weekStart(new Date());
+ const thisWeek=log.filter(l=>new Date(l.date+'T00:00')>=ws).length;
+ $('hWeek').textContent=thisWeek;
+ // week streak: consecutive weeks (incl this one) with >=1 session
+ let streak=0;let cur=new Date(ws);
+ const hasInWeek=st=>{const en=new Date(st);en.setDate(en.getDate()+7);return log.some(l=>{const d=new Date(l.date+'T00:00');return d>=st&&d<en;});};
+ while(hasInWeek(new Date(cur))){streak++;cur.setDate(cur.getDate()-7);}
+ $('hStreakW').textContent=streak;
+ // 12-week bar chart
+ const weeks=[];for(let i=11;i>=0;i--){const st=new Date(ws);st.setDate(st.getDate()-i*7);const en=new Date(st);en.setDate(en.getDate()+7);
+   weeks.push({label:(st.getMonth()+1)+'/'+st.getDate(),n:log.filter(l=>{const d=new Date(l.date+'T00:00');return d>=st&&d<en;}).length});}
+ const totalSessions=weeks.reduce((a,w)=>a+w.n,0);
+ $('hAvg').textContent=totalSessions?('Avg '+(totalSessions/12).toFixed(1)+' sessions/week over 12 weeks'):'No sessions logged yet.';
+ drawHistoryBars(weeks);
+ // by day of week
+ const dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const counts=[0,0,0,0,0,0,0];
+ log.forEach(l=>{counts[new Date(l.date+'T00:00').getDay()]++;});
+ const maxC=Math.max(1,...counts);
+ $('hDow').innerHTML=dows.map((d,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+   <span class="tiny" style="width:34px">${d}</span>
+   <div style="flex:1;height:14px;background:#eee9dc;border-radius:7px;overflow:hidden"><i style="display:block;height:100%;width:${counts[i]/maxC*100}%;background:linear-gradient(90deg,var(--turf),var(--bronze))"></i></div>
+   <span class="tiny" style="width:18px;text-align:right">${counts[i]}</span></div>`).join('');
+ // log list
+ $('hLog').innerHTML=log.length?log.map((l,idx)=>`<div class="logrow"><span><b>${esc(l.planName||'Plan')}</b> · ${esc(l.dayName||('Day '+(l.day+1)))}${l.focus?' <span class="tiny">'+esc(l.focus)+'</span>':''}</span><span>${fmt(l.date)} <button data-hdel="${l.date}|${l.plan}|${l.day}">✕</button></span></div>`).join(''):'<div class="empty">No completed workouts yet.</div>';
+ $('hLog').querySelectorAll('[data-hdel]').forEach(b=>b.onclick=()=>{const[date,plan,day]=b.dataset.hdel.split('|');P().workoutLog=P().workoutLog.filter(l=>!(l.date===date&&l.plan==plan&&l.day==day));commit();renderHistory();renderPlanCards();});
+}
+function drawHistoryBars(weeks){
+ const c=$('hBars'),dpr=window.devicePixelRatio||1,W=c.clientWidth||340,H=160;c.width=W*dpr;c.height=H*dpr;
+ const x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);
+ const pad=20,pb=22,bw=(W-pad-6)/12,maxY=Math.max(1,...weeks.map(w=>w.n));
+ x.strokeStyle='#eee9dc';x.beginPath();x.moveTo(pad,H-pb);x.lineTo(W-4,H-pb);x.stroke();
+ weeks.forEach((w,i)=>{const bh=(w.n/maxY)*(H-pb-8);const bx=pad+i*bw;x.fillStyle=w.n>=3?'#16a34a':'#c8a24a';x.fillRect(bx+2,H-pb-bh,bw-4,bh);
+   if(w.n){x.fillStyle='#33403a';x.font='9px Barlow';x.textAlign='center';x.fillText(w.n,bx+bw/2,H-pb-bh-3);}
+   if(i%2===0){x.fillStyle='#9aa49d';x.font='8px Barlow';x.textAlign='center';x.fillText(w.label,bx+bw/2,H-7);}});
+ x.textAlign='left';
+}
 
 /* ============ NUTRITION ============ */
 let curDay='nongame';
@@ -834,7 +925,7 @@ function boot(){
  $('dIn').value=todayKey();renderWeight();
  renderVitals();fillSettings();
 }
-window.addEventListener('resize',()=>{if($('weight').classList.contains('active'))drawChart();if($('vitals').classList.contains('active'))renderVTrend();});
+window.addEventListener('resize',()=>{if($('weight').classList.contains('active'))drawChart();if($('vitals').classList.contains('active'))renderVTrend();if($('history').classList.contains('active'))renderHistory();});
 boot();
 
 </script>
