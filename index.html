@@ -175,7 +175,27 @@ footer{text-align:center;font-size:11px;color:var(--muted);padding:24px 16px;}
   </section>
 
   <section class="view" id="nutri">
-    <div class="intro"><b>Nutrition templates.</b> Game days raise carbs for fuel &amp; recovery; non-game days hold a deficit. Adjust portions to hit your own macro targets.</div>
+    <div class="intro"><b>Nutrition templates.</b> Set a daily calorie target and the three day-types scale around it — game days add carbs for fuel &amp; recovery. Foods are adaptable guides.</div>
+
+    <div class="wtcard" style="padding:14px 16px">
+      <div class="sectitle" style="margin-bottom:8px">DAILY TARGET <button class="btn alt sm" id="nutToggle">⚙︎ Set</button></div>
+      <div id="nutPanel" style="display:none">
+        <div class="toggle" id="nutMode" style="margin-bottom:12px"><button class="active" data-nm="manual">Set my own</button><button data-nm="auto">Suggest from goal</button></div>
+        <div id="nutManual" class="field"><label>Non-game daily calories (the base)</label><input id="nutCal" type="number" step="10" placeholder="1850"></div>
+        <div id="nutAuto" style="display:none">
+          <div class="tiny" id="nutAutoCalc" style="margin-bottom:10px"></div>
+          <div class="field"><label>Activity level (for maintenance estimate)</label>
+            <select id="nutAct"><option value="1.3">Light (mostly desk)</option><option value="1.45" selected>Moderate (train 3-5×/wk)</option><option value="1.6">High (train 6+ or active job)</option></select></div>
+          <button class="btn sm" id="nutUseAuto">Use suggested base</button>
+        </div>
+        <div class="field" style="margin-top:12px"><label>Protein target (g per lb of target weight)</label>
+          <select id="nutProt"><option value="1">1.0 g/lb (standard cut)</option><option value="0.9">0.9 g/lb</option><option value="1.1">1.1 g/lb (high)</option></select></div>
+        <div class="toggle" id="nutFoodMode"><button class="active" data-fm="guide">Foods as guides</button><button data-fm="scale">Scale portions</button></div>
+        <div class="warn" style="margin-top:12px">Calorie targets are starting estimates, not medical advice. Very aggressive deficits can blunt the power, sprint speed, and recovery you need on the field — adjust to how you feel and perform.</div>
+      </div>
+      <div id="nutSummary" class="tiny"></div>
+    </div>
+
     <div class="pill" id="dayPills"></div>
     <div class="macrobar" id="macrobar"></div>
     <div id="meals"></div>
@@ -342,6 +362,7 @@ function seedVitals(){return [
 let APP=loadApp();
 function blankProfile(){
  return {settings:{name:'',sub:'Power, sprint & endurance training with a structured weight-management plan.',unit:'lb',start:225,target:180,weeks:26},
+   nutCfg:{base:1850,protPerLb:1,foodMode:'guide',t20up:300,t40up:600,fatFloor:0.3},
    plans:seedPlans(),activePlan:0,done:{},weights:[],vitalDefs:seedVitals(),vitals:{}};
 }
 function loadApp(){
@@ -447,22 +468,92 @@ function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','
 
 /* ============ NUTRITION ============ */
 let curDay='nongame';
+function nutCfg(){const p=P();if(!p.nutCfg)p.nutCfg={base:1850,protPerLb:1,foodMode:'guide',t20up:300,t40up:600,fatFloor:0.3};return p.nutCfg;}
+// kcal target per day-type
+function dayCalories(key){const c=nutCfg();if(key==='t20')return c.base+c.t20up;if(key==='t40')return c.base+c.t40up;return c.base;}
+// macros: protein from target bodyweight, fat floor, carbs fill remainder (extra game-day kcal go to carbs)
+function dayMacros(key){
+ const c=nutCfg(),s=P().settings;
+ const wlb=U()==='kg'?s.target*2.20462:s.target; // protein anchored to target weight in lb
+ const p=Math.round(wlb*c.protPerLb);
+ const cal=dayCalories(key);
+ const fatKcal=Math.round(cal*c.fatFloor);const f=Math.round(fatKcal/9);
+ const carbsKcal=Math.max(0,cal-p*4-f*9);const cb=Math.round(carbsKcal/4);
+ return {cal,p,c:cb,f};
+}
 function renderNutriPills(){
  $('dayPills').innerHTML=[['nongame','Non-Game'],['t20','T20 Game'],['t40','T40 Game']].map(d=>`<button data-d="${d[0]}" class="${d[0]===curDay?'active':''}">${d[1]}</button>`).join('');
  $('dayPills').onclick=e=>{if(!e.target.dataset.d)return;curDay=e.target.dataset.d;renderNutriPills();renderNutri();};
 }
 function renderNutri(){
- const d=NUTRITION[curDay];
- $('macrobar').innerHTML=`<div class="macro cal"><div class="mv">${d.cal}</div><div class="ml">kcal</div></div>
-  <div class="macro"><div class="mv">${d.p}</div><div class="ml">Protein g</div></div>
-  <div class="macro"><div class="mv">${d.c}</div><div class="ml">Carbs g</div></div>
-  <div class="macro"><div class="mv">${d.f}</div><div class="ml">Fat g</div></div>`;
+ const tmpl=NUTRITION[curDay];const M=dayMacros(curDay);const c=nutCfg();
+ // template's own calorie total (sum of meals) for scaling ratio
+ const tmplCal=tmpl.meals.reduce((a,m)=>a+(m.cal||0),0)||tmpl.cal;
+ const ratio=c.foodMode==='scale'&&tmplCal?M.cal/tmplCal:1;
+ $('macrobar').innerHTML=`<div class="macro cal"><div class="mv">${M.cal}</div><div class="ml">kcal</div></div>
+  <div class="macro"><div class="mv">${M.p}</div><div class="ml">Protein g</div></div>
+  <div class="macro"><div class="mv">${M.c}</div><div class="ml">Carbs g</div></div>
+  <div class="macro"><div class="mv">${M.f}</div><div class="ml">Fat g</div></div>`;
  let html='';
- d.meals.forEach(m=>{const items=m.items.map(i=>`<div class="fitem"><span>${esc(i[0])}</span><span>${esc(i[1])}</span></div>`).join('');
-   html+=`<div class="meal"><div class="mealh"><span class="mt">${esc(m.t)}</span><span><span class="time">${esc(m.time)}</span> · <span class="mc">${m.cal} kcal</span></span></div>${items}</div>`;});
- html+=`<div class="meal"><div class="note">💡 ${esc(d.note)}</div></div>`;
+ tmpl.meals.forEach(m=>{
+   const mc=Math.round((m.cal||0)*ratio);
+   const items=m.items.map(i=>{
+     let label=i[0];
+     if(c.foodMode==='scale'&&ratio!==1)label=scaleFoodLabel(i[0],ratio);
+     return `<div class="fitem"><span>${esc(label)}</span><span>${esc(i[1])}</span></div>`;
+   }).join('');
+   html+=`<div class="meal"><div class="mealh"><span class="mt">${esc(m.t)}</span><span><span class="time">${esc(m.time)}</span> · <span class="mc">${mc} kcal</span></span></div>${items}</div>`;
+ });
+ // gap note when in guide mode
+ if(c.foodMode==='guide'){
+   const diff=M.cal-tmplCal;const sign=diff>=0?'+':'';
+   html+=`<div class="meal"><div class="note">📊 This template's foods total ≈ ${tmplCal} kcal. Your ${curDay==='nongame'?'non-game':curDay.toUpperCase()} target is ${M.cal} kcal (${sign}${diff}). Adjust portions to close the gap — or switch to “Scale portions” to auto-adjust quantities.</div></div>`;
+ }
+ html+=`<div class="meal"><div class="note">💡 ${esc(tmpl.note)}</div></div>`;
  $('meals').innerHTML=html;
+ renderNutSummary();
 }
+// scale numeric quantities inside a food label (e.g. "Chicken 150g" -> "Chicken 165g")
+function scaleFoodLabel(label,ratio){
+ return label.replace(/(\d+(?:\.\d+)?)(\s?(?:g|ml|scoop|tbsp|tsp)\b)?/gi,(match,num,unit)=>{
+   if(!unit&&!/×|x/.test(label))return match; // don't scale bare counts unless unit present
+   const v=parseFloat(num)*ratio;const rounded=v>=20?Math.round(v/5)*5:Math.round(v);
+   return rounded+(unit||'');
+ });
+}
+function renderNutSummary(){
+ const c=nutCfg();
+ $('nutSummary').innerHTML=`Base (non-game) <b>${c.base} kcal</b> · T20 <b>${c.base+c.t20up}</b> · T40 <b>${c.base+c.t40up}</b> · protein ${c.protPerLb}g/lb · foods: ${c.foodMode==='scale'?'scaled to target':'shown as guides'}.`;
+}
+/* ---- nutrition settings panel ---- */
+function autoBaseEstimate(){
+ const s=P().settings;const act=parseFloat($('nutAct').value)||1.45;
+ const wlb=U()==='kg'?s.start*2.20462:s.start;
+ // crude BMR (Mifflin-ish, weight-only proxy) * activity, then deficit for goal rate
+ const maint=Math.round(wlb*10*act/ (U()==='kg'?1:1)); // wlb*10 ~ rough kcal/lb baseline
+ const lbsToLose=(s.start-s.target)*(U()==='kg'?2.20462:1);
+ const perWeek=lbsToLose/Math.max(1,s.weeks);
+ const dailyDeficit=Math.round(perWeek*3500/7);
+ const base=Math.max(1200,maint-dailyDeficit);
+ return {maint,perWeek:perWeek.toFixed(2),dailyDeficit,base};
+}
+function openNutPanel(show){$('nutPanel').style.display=show?'block':'none';}
+$('nutToggle').onclick=()=>{const open=$('nutPanel').style.display==='none';openNutPanel(open);if(open)fillNutPanel();};
+function fillNutPanel(){
+ const c=nutCfg();$('nutCal').value=c.base;$('nutProt').value=String(c.protPerLb);
+ document.querySelectorAll('#nutFoodMode button').forEach(b=>b.classList.toggle('active',b.dataset.fm===c.foodMode));
+}
+$('nutMode').onclick=e=>{if(!e.target.dataset.nm)return;const m=e.target.dataset.nm;
+ document.querySelectorAll('#nutMode button').forEach(b=>b.classList.toggle('active',b===e.target));
+ $('nutManual').style.display=m==='manual'?'block':'none';$('nutAuto').style.display=m==='auto'?'block':'none';
+ if(m==='auto'){const a=autoBaseEstimate();$('nutAutoCalc').innerHTML=`Est. maintenance ≈ <b>${a.maint} kcal</b>. To lose ${a.perWeek} ${U()}/wk you'd cut ~${a.dailyDeficit}/day → suggested base <b>${a.base} kcal</b>. This is a rough starting point.`;}
+};
+$('nutAct').onchange=()=>{const a=autoBaseEstimate();$('nutAutoCalc').innerHTML=`Est. maintenance ≈ <b>${a.maint} kcal</b>. To lose ${a.perWeek} ${U()}/wk you'd cut ~${a.dailyDeficit}/day → suggested base <b>${a.base} kcal</b>. This is a rough starting point.`;};
+$('nutUseAuto').onclick=()=>{const a=autoBaseEstimate();nutCfg().base=a.base;commit();fillNutPanel();renderNutri();};
+$('nutCal').onchange=()=>{const v=parseInt($('nutCal').value);if(v>0){nutCfg().base=v;commit();renderNutri();}};
+$('nutProt').onchange=()=>{nutCfg().protPerLb=parseFloat($('nutProt').value);commit();renderNutri();};
+$('nutFoodMode').onclick=e=>{if(!e.target.dataset.fm)return;nutCfg().foodMode=e.target.dataset.fm;commit();
+ document.querySelectorAll('#nutFoodMode button').forEach(b=>b.classList.toggle('active',b===e.target));renderNutri();};
 
 /* ============ WEIGHT ============ */
 let chartMode='line';
